@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPOS Kasir — Aplikasi Kasir Toko</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKEN DESAIN
+   ============================================================ */
+:root{
+  --bg:#EFEDE2;
+  --surface:#FFFFFF;
+  --surface-2:#F7F5EA;
+  --ink:#20261D;
+  --ink-soft:#5B6355;
+  --ink-faint:#8C927F;
+  --border:#DBD5C0;
+  --border-soft:#E7E2D2;
+  --primary:#1F6E5C;
+  --primary-dark:#154F42;
+  --primary-light:#E1EFE9;
+  --gold:#C9932E;
+  --gold-dark:#A97A22;
+  --gold-light:#F6EAD2;
+  --danger:#B23B3B;
+  --danger-light:#F6E2E0;
+  --success:#3F7D58;
+  --success-light:#E3EFE6;
+  --vfd-bg:#14120D;
+  --vfd-amber:#FFB24A;
+  --vfd-amber-dim:#7A5A28;
+  --radius-sm:6px;
+  --radius:10px;
+  --radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(32,38,29,.10);
+  --shadow:0 6px 20px rgba(32,38,29,.10);
+  --shadow-lg:0 14px 40px rgba(32,38,29,.18);
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-display);margin:0;color:var(--ink);}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--gold-light);}
+
+/* Scrollbar halus */
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+#loginScreen{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(31,110,92,.14), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(201,147,46,.16), transparent 45%),
+    var(--bg);
+  z-index:500;
+  padding:20px;
+}
+.login-card{
+  width:100%;max-width:380px;
+  background:var(--surface);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);
+  padding:36px 32px 30px;
+  border:1px solid var(--border-soft);
+}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.login-brand .mark{
+  width:42px;height:42px;border-radius:11px;
+  background:var(--primary);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 10px rgba(31,110,92,.35);
+}
+.login-brand .mark svg{width:22px;height:22px;stroke:#fff;}
+.login-brand .txt h1{font-size:19px;letter-spacing:.2px;}
+.login-brand .txt p{margin:0;font-size:11.5px;color:var(--ink-faint);letter-spacing:.5px;text-transform:uppercase;}
+.login-card label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
+.login-card input{
+  width:100%;padding:11px 13px;border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14.5px;background:var(--surface-2);
+  transition:border-color .15s, background .15s;
+}
+.login-card input:focus{outline:none;border-color:var(--primary);background:#fff;}
+.btn-login{
+  width:100%;margin-top:20px;padding:12px;border:none;border-radius:var(--radius-sm);
+  background:var(--primary);color:#fff;font-weight:600;font-size:14.5px;
+  box-shadow:0 6px 16px rgba(31,110,92,.30);
+  transition:transform .1s, background .15s;
+}
+.btn-login:hover{background:var(--primary-dark);}
+.btn-login:active{transform:scale(.98);}
+.login-hint{margin-top:16px;font-size:11.5px;color:var(--ink-faint);text-align:center;line-height:1.5;}
+.login-error{
+  margin-top:12px;padding:9px 12px;border-radius:var(--radius-sm);
+  background:var(--danger-light);color:var(--danger);font-size:12.5px;font-weight:600;
+  display:none;
+}
+.login-error.show{display:block;}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#appShell{display:none;height:100vh;}
+#appShell.show{display:flex;}
+
+.sidebar{
+  width:230px;flex-shrink:0;
+  background:var(--ink);
+  color:#fff;
+  display:flex;flex-direction:column;
+  padding:20px 14px;
+}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:0 6px 22px;border-bottom:1px solid rgba(255,255,255,.10);margin-bottom:14px;}
+.sidebar .brand .mark{
+  width:34px;height:34px;border-radius:9px;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.sidebar .brand .mark svg{width:18px;height:18px;stroke:var(--ink);}
+.sidebar .brand h1{font-size:15.5px;color:#fff;line-height:1.2;}
+.sidebar .brand span{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase;}
+
+.nav-group-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.35);margin:14px 10px 6px;font-weight:600;}
+.nav-btn{
+  display:flex;align-items:center;gap:11px;width:100%;
+  padding:10px 12px;border:none;background:transparent;color:rgba(255,255,255,.75);
+  border-radius:var(--radius-sm);font-size:13.6px;font-weight:500;text-align:left;
+  transition:background .12s, color .12s;
+  margin-bottom:2px;
+}
+.nav-btn svg{width:17px;height:17px;stroke:currentColor;flex-shrink:0;}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-btn.active{background:var(--primary);color:#fff;}
+.sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.10);}
+.user-chip{display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:var(--radius-sm);}
+.user-chip .avatar{
+  width:32px;height:32px;border-radius:50%;background:var(--gold);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--ink);flex-shrink:0;
+}
+.user-chip .info p{margin:0;font-size:12.5px;font-weight:600;color:#fff;}
+.user-chip .info span{font-size:10.5px;color:rgba(255,255,255,.5);text-transform:capitalize;}
+.btn-logout{
+  width:100%;margin-top:10px;padding:8px;border-radius:var(--radius-sm);
+  background:rgba(178,59,59,.18);color:#f0a8a4;border:1px solid rgba(178,59,59,.3);
+  font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-logout:hover{background:rgba(178,59,59,.3);}
+.btn-logout svg{width:14px;height:14px;stroke:currentColor;}
+
+.main-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.topbar{
+  height:60px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border-soft);
+  display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+}
+.topbar .store-info h2{font-size:15.5px;}
+.topbar .store-info span{font-size:11.5px;color:var(--ink-faint);}
+.topbar .clock{font-family:var(--font-mono);font-size:13px;color:var(--ink-soft);background:var(--surface-2);padding:6px 12px;border-radius:20px;border:1px solid var(--border-soft);}
+#hamburger{display:none;background:none;border:none;padding:6px;}
+#hamburger svg{width:22px;height:22px;stroke:var(--ink);}
+
+.content{flex:1;overflow-y:auto;padding:24px 26px 60px;}
+.page{display:none;}
+.page.active{display:block;animation:fadein .18s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+.page-head h2{font-size:21px;}
+.page-head p{margin:3px 0 0;color:var(--ink-faint);font-size:13px;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-dark);margin-bottom:4px;}
+
+/* ============================================================
+   KOMPONEN UMUM
+   ============================================================ */
+.btn{
+  border:none;border-radius:var(--radius-sm);padding:9px 16px;font-size:13.5px;font-weight:600;
+  display:inline-flex;align-items:center;gap:7px;transition:background .12s, transform .08s, box-shadow .12s;
+}
+.btn svg{width:15px;height:15px;stroke:currentColor;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(31,110,92,.25);}
+.btn-primary:hover{background:var(--primary-dark);}
+.btn-gold{background:var(--gold);color:#fff;box-shadow:0 3px 10px rgba(201,147,46,.3);}
+.btn-gold:hover{background:var(--gold-dark);}
+.btn-outline{background:var(--surface);color:var(--ink);border:1.5px solid var(--border);}
+.btn-outline:hover{border-color:var(--ink-faint);}
+.btn-danger{background:var(--danger-light);color:var(--danger);}
+.btn-danger:hover{background:#f0cac6;}
+.btn-sm{padding:6px 11px;font-size:12px;}
+.btn-icon{padding:7px;border-radius:8px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
+.card-pad{padding:18px 20px;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);}
+.stat-card .label{font-size:11.5px;color:var(--ink-faint);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.stat-card .value{font-family:var(--font-display);font-size:22px;margin-top:6px;font-weight:700;}
+.stat-card .sub{font-size:11.5px;color:var(--ink-faint);margin-top:3px;}
+.stat-card .icon-badge{position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.stat-card .icon-badge svg{width:17px;height:17px;stroke:#fff;}
+.ib-teal{background:var(--primary);} .ib-gold{background:var(--gold);} .ib-danger{background:var(--danger);} .ib-ink{background:var(--ink);}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+thead th{
+  text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-faint);
+  padding:10px 14px;border-bottom:2px solid var(--border-soft);font-weight:700;background:var(--surface-2);
+}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--border-soft);vertical-align:middle;}
+tbody tr:hover{background:var(--surface-2);}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border-soft);}
+.table-wrap table{background:var(--surface);}
+.empty-row td{text-align:center;color:var(--ink-faint);padding:36px 0;font-style:italic;}
+
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-ok{background:var(--success-light);color:var(--success);}
+.badge-warn{background:var(--gold-light);color:var(--gold-dark);}
+.badge-danger{background:var(--danger-light);color:var(--danger);}
+.badge-admin{background:var(--primary-light);color:var(--primary-dark);}
+.badge-kasir{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--border);}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+.field input,.field select,.field textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:13.7px;background:var(--surface-2);
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary);background:#fff;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.search-box{position:relative;}
+.search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ink-faint);}
+.search-box input{padding-left:34px;}
+
+/* Modal */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(20,24,17,.45);z-index:600;
+  display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);
+}
+.modal-backdrop.show{display:flex;}
+.modal{
+  background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+  width:100%;max-width:480px;max-height:88vh;overflow-y:auto;
+  animation:pop .16s ease;
+}
+.modal.modal-wide{max-width:620px;}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(6px);}to{opacity:1;transform:none;}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-soft);position:sticky;top:0;background:var(--surface);z-index:2;}
+.modal-head h3{font-size:16.5px;}
+.modal-close{background:none;border:none;padding:5px;border-radius:8px;color:var(--ink-faint);}
+.modal-close:hover{background:var(--surface-2);}
+.modal-close svg{width:18px;height:18px;stroke:currentColor;}
+.modal-body{padding:20px 22px;}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border-soft);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:var(--surface);}
+
+/* Toast */
+#toastContainer{position:fixed;bottom:22px;right:22px;z-index:900;display:flex;flex-direction:column;gap:8px;}
+.toast{
+  background:var(--ink);color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow-lg);opacity:0;transform:translateY(8px);transition:opacity .25s, transform .25s;
+  display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:none;}
+.toast-error{background:var(--danger);}
+.toast-success{background:var(--success);}
+
+/* ============================================================
+   POS / PENJUALAN
+   ============================================================ */
+.pos-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start;}
+.pos-products{display:flex;flex-direction:column;gap:14px;}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;max-height:calc(100vh - 260px);overflow-y:auto;padding-right:4px;}
+.product-card{
+  background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);
+  padding:13px 12px;cursor:pointer;transition:border-color .12s, transform .08s, box-shadow .12s;
+  display:flex;flex-direction:column;gap:6px;
+}
+.product-card:hover{border-color:var(--primary);box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+.product-card.out{opacity:.45;cursor:not-allowed;}
+.product-card .pc-kode{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);}
+.product-card .pc-nama{font-size:13px;font-weight:600;line-height:1.3;min-height:34px;}
+.product-card .pc-harga{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--primary-dark);}
+.product-card .pc-stok{font-size:10.8px;color:var(--ink-faint);}
+.product-card .pc-stok.low{color:var(--danger);font-weight:700;}
+
+.pos-cart{
+  background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--radius);
+  display:flex;flex-direction:column;position:sticky;top:0;
+}
+.cart-head{padding:16px 18px 12px;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;}
+.cart-head h3{font-size:15px;}
+.cart-items{max-height:280px;overflow-y:auto;padding:6px 0;}
+.cart-row{display:flex;align-items:center;gap:8px;padding:9px 18px;border-bottom:1px solid var(--border-soft);}
+.cart-row .ci-name{flex:1;min-width:0;}
+.cart-row .ci-name p{margin:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cart-row .ci-name span{font-size:11px;color:var(--ink-faint);font-family:var(--font-mono);}
+.qty-control{display:flex;align-items:center;gap:5px;}
+.qty-control button{width:22px;height:22px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);font-weight:700;font-size:13px;line-height:1;color:var(--ink);}
+.qty-control span{font-family:var(--font-mono);font-size:13px;font-weight:700;min-width:20px;text-align:center;}
+.ci-sub{font-family:var(--font-mono);font-size:12.5px;font-weight:700;width:76px;text-align:right;}
+.ci-remove{background:none;border:none;color:var(--danger);padding:3px;}
+.ci-remove svg{width:14px;height:14px;stroke:currentColor;}
+.cart-empty{padding:38px 18px;text-align:center;color:var(--ink-faint);font-size:12.8px;}
+
+.cart-summary{padding:14px 18px;border-top:1px solid var(--border-soft);}
+.sum-row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);margin-bottom:6px;}
+.sum-row input{width:96px;text-align:right;padding:5px 8px;border:1.3px solid var(--border);border-radius:6px;font-size:12.6px;}
+
+.vfd{
+  background:var(--vfd-bg);border-radius:10px;padding:12px 16px;margin:10px 0 4px;
+  display:flex;justify-content:space-between;align-items:baseline;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.5);
+}
+.vfd .vfd-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:1.5px;color:var(--vfd-amber-dim);text-transform:uppercase;}
+.vfd .vfd-value{font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--vfd-amber);text-shadow:0 0 10px rgba(255,178,74,.55);letter-spacing:.5px;}
+
+.pay-box{padding:14px 18px 18px;border-top:1px solid var(--border-soft);}
+.pay-quick{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.pay-quick button{flex:1;min-width:64px;padding:7px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);font-size:11.6px;font-weight:700;font-family:var(--font-mono);}
+.pay-quick button:hover{border-color:var(--primary);color:var(--primary-dark);}
+.kembalian-box{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;font-weight:700;}
+.kembalian-box span.val{font-family:var(--font-mono);color:var(--success);font-size:15px;}
+.btn-bayar{width:100%;margin-top:14px;padding:13px;font-size:14.5px;justify-content:center;}
+
+/* ============================================================
+   STRUK (dipakai di window cetak)
+   ============================================================ */
+.receipt-wrap{max-width:300px;margin:0 auto;}
+
+/* ============================================================
+   LOGIN role hide + responsive
+   ============================================================ */
+[data-role-only]{display:flex;}
+body.role-kasir [data-role-only]{display:none;}
+
+@media (max-width: 980px){
+  .pos-grid{grid-template-columns:1fr;}
+  .pos-cart{position:relative;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width: 760px){
+  #hamburger{display:block;}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:400;transform:translateX(-100%);transition:transform .2s;box-shadow:var(--shadow-lg);}
+  .sidebar.open{transform:translateX(0);}
+  .field-row{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .content{padding:18px 14px 50px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 21V13h6v8"/></svg></div>
+      <div class="txt">
+        <h1>iPOS Kasir</h1>
+        <p>Sistem Kasir Toko</p>
+      </div>
+    </div>
+    <form id="loginForm">
+      <label>Username</label>
+      <input type="text" id="loginUsername" autocomplete="username" required placeholder="">
+      <label>Password</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="">
+      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="btn-login">Masuk</button>
+    </form>
+    <p class="login-hint">Login pertama kali? Gunakan<br><b>admin</b> / <b>admin123</b> — segera ganti password di menu User.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="appShell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 21V13h6v8"/></svg></div>
+      <div><h1>iPOS Kasir</h1><span>v1.0 · IndexedDB</span></div>
+    </div>
+
+    <div class="nav-group-label">Utama</div>
+    <button class="nav-btn" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/></svg>Dashboard</button>
+    <button class="nav-btn" data-page="penjualan"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h2l2.2 12.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21 7H5.3"/></svg>Penjualan (Kasir)</button>
+    <button class="nav-btn" data-page="pembelian" data-role-only><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h9"/><path d="M8 10h4M8 14h2"/><path d="M17 14v6M14 17h6"/></svg>Pembelian</button>
+
+    <div class="nav-group-label">Data</div>
+    <button class="nav-btn" data-page="barang" data-role-only><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>Master Barang</button>
+    <button class="nav-btn" data-page="laporanPenjualan"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/></svg>Laporan Penjualan</button>
+    <button class="nav-btn" data-page="laporanPembelian" data-role-only><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Laporan Pembelian</button>
+
+    <div class="nav-group-label">Sistem</div>
+    <button class="nav-btn" data-page="pengaturan" data-role-only><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>Pengaturan Toko</button>
+    <button class="nav-btn" data-page="user" data-role-only><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>Manajemen User</button>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="avatar" id="avatarInitial">A</div>
+        <div class="info"><p id="chipNama">-</p><span id="chipRole">-</span></div>
+      </div>
+      <button class="btn-logout" id="btnLogout"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Keluar</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="hamburger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <div class="store-info">
+          <h2 id="topbarStoreName">Toko Saya</h2>
+          <span id="topbarStoreAddr">-</span>
+        </div>
+      </div>
+      <div class="clock" id="clockBox">--:--:--</div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===================== DASHBOARD ===================== -->
+      <section class="page" id="page-dashboard">
+        <div class="page-head">
+          <div><div class="eyebrow">Ringkasan</div><h2>Dashboard</h2><p>Ikhtisar performa toko hari ini.</p></div>
+        </div>
+        <div class="stat-grid" id="dashStats"></div>
+        <div class="card" style="padding:0;">
+          <div class="card-pad" style="border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:15px;">Stok Menipis</h3>
+            <span style="font-size:12px;color:var(--ink-faint);">Segera lakukan pembelian ulang</span>
+          </div>
+          <div class="table-wrap" style="border:none;border-radius:0;">
+            <table>
+              <thead><tr><th>Kode</th><th>Nama Barang</th><th>Stok</th><th>Stok Minimal</th><th>Status</th></tr></thead>
+              <tbody id="dashLowStock"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PENJUALAN (POS) ===================== -->
+      <section class="page" id="page-penjualan">
+        <div class="page-head">
+          <div><div class="eyebrow">Kasir</div><h2>Penjualan</h2><p>Pilih barang, atur jumlah, lalu proses pembayaran.</p></div>
+        </div>
+        <div class="pos-grid">
+          <div class="pos-products">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" id="posSearch" placeholder="Cari nama atau kode barang...">
+              <!-- Input Kode Barang menjadi Readonly -->
+<input type="text" id="kodeBarang" name="kodeBarang" readonly placeholder="Otomatis terisi...">
+            </div>
+            <div class="product-grid" id="posProductGrid"></div>
+          </div>
+
+          <div class="pos-cart">
+            <div class="cart-head">
+              <h3>Keranjang</h3>
+              <button class="btn btn-outline btn-sm" id="btnClearCart">Kosongkan</button>
+            </div>
+            <div class="cart-items" id="cartItems"></div>
+            <div class="cart-summary">
+              <div class="sum-row"><span>Subtotal</span><span id="sumSubtotal">Rp0</span></div>
+              <div class="sum-row"><span>Diskon (%)</span><input type="number" id="inputDiskon" value="0" min="0"></div>
+              <div class="vfd"><span class="vfd-label">Total Bayar</span><span class="vfd-value" id="vfdTotal">Rp0</span></div>
+            </div>
+            <div class="pay-box">
+              <div class="field" style="margin-bottom:8px;">
+                <label>Metode Pembayaran</label>
+                <select id="metodeBayar">
+                  <option value="Tunai">Tunai</option>
+                  <option value="QRIS">QRIS</option>
+                  <option value="Debit/Kredit">Debit / Kredit</option>
+                  <option value="Transfer">Transfer</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:0;">
+                <label>Uang Diterima</label>
+                <input type="number" id="inputBayar" placeholder="0" min="0">
+              </div>
+              <div class="pay-quick" id="payQuick"></div>
+              <div class="kembalian-box"><span>Kembalian</span><span class="val" id="kembalianVal">Rp0</span></div>
+              <button class="btn btn-primary btn-bayar" id="btnBayar">Proses & Cetak Struk</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== PEMBELIAN ===================== -->
+      <section class="page" id="page-pembelian">
+        <div class="page-head">
+          <div><div class="eyebrow">Stok Masuk</div><h2>Pembelian</h2><p>Catat pembelian barang dari supplier — stok otomatis bertambah.</p></div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="field-row">
+            <div class="field"><label>Nama Supplier</label><input type="text" id="pbSupplier" placeholder="cth. CV Sumber Rejeki"></div>
+            <div class="field"><label>No. Telepon Supplier (opsional)</label><input type="text" id="pbTelp" placeholder="cth. 0812xxxxxxx"></div>
+          </div>
+          <div class="field-row" style="align-items:end;">
+            <div class="field"><label>Pilih Barang</label><select id="pbProduk"></select></div>
+            <div class="field-row" style="grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="field"><label>Qty</label><input type="number" id="pbQty" value="1" min="1"></div>
+              <div class="field"><label>Harga Beli / unit</label><input type="number" id="pbHarga" value="0" min="0"></div>
+            </div>
+          </div>
+          <button class="btn btn-outline" id="btnTambahItemBeli">+ Tambah ke Daftar</button>
+        </div>
+
+        <div class="card" style="padding:0;">
+          <div class="table-wrap" style="border:none;border-radius:0;">
+            <table>
+              <thead><tr><th>Barang</th><th>Qty</th><th>Harga Beli</th><th>Subtotal</th><th></th></tr></thead>
+              <tbody id="pbCartBody"></tbody>
+            </table>
+          </div>
+          <div class="card-pad" style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-soft);">
+            <div><span style="color:var(--ink-faint);font-size:13px;">Total Pembelian</span><h3 id="pbTotal" style="font-size:22px;">Rp0</h3></div>
+            <button class="btn btn-primary" id="btnSimpanPembelian">Simpan Transaksi Pembelian</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== MASTER BARANG ===================== -->
+      <section class="page" id="page-barang">
+        <div class="page-head">
+          <div><div class="eyebrow">Data</div><h2>Master Barang</h2><p>Kelola daftar produk, harga, dan stok.</p></div>
+          <button class="btn btn-gold" id="btnTambahBarang">+ Tambah Barang</button>
+        </div>
+        <div class="search-box" style="max-width:320px;margin-bottom:14px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="barangSearch" placeholder="Cari barang...">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kode</th><th>Barcode</th><th>Nama</th><th>Kategori</th><th>Satuan</th><th>Harga Beli</th><th>Harga Jual</th><th>Stok</th><th>Status</th><th></th></tr></thead>
+            <tbody id="barangTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== LAPORAN PENJUALAN ===================== -->
+      <section class="page" id="page-laporanPenjualan">
+        <div class="page-head">
+          <div><div class="eyebrow">Laporan</div><h2>Laporan Penjualan</h2><p>Rekap transaksi penjualan berdasarkan periode.</p></div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+          <div class="field" style="margin:0;"><label>Dari Tanggal</label><input type="date" id="lpDari"></div>
+          <div class="field" style="margin:0;"><label>Sampai Tanggal</label><input type="date" id="lpSampai"></div>
+          <button class="btn btn-primary" id="btnFilterLP">Tampilkan</button>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);" id="lpStats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Kasir</th><th>Item</th><th>Metode</th><th>Total</th><th></th></tr></thead>
+            <tbody id="lpTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== LAPORAN PEMBELIAN ===================== -->
+      <section class="page" id="page-laporanPembelian">
+        <div class="page-head">
+          <div><div class="eyebrow">Laporan</div><h2>Laporan Pembelian</h2><p>Rekap transaksi pembelian barang berdasarkan periode.</p></div>
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+          <div class="field" style="margin:0;"><label>Dari Tanggal</label><input type="date" id="lbDari"></div>
+          <div class="field" style="margin:0;"><label>Sampai Tanggal</label><input type="date" id="lbSampai"></div>
+          <button class="btn btn-primary" id="btnFilterLB">Tampilkan</button>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);" id="lbStats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>No. Transaksi</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th></tr></thead>
+            <tbody id="lbTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================== PENGATURAN ===================== -->
+      <section class="page" id="page-pengaturan">
+        <div class="page-head">
+          <div><div class="eyebrow">Sistem</div><h2>Pengaturan Toko</h2><p>Informasi ini akan tampil pada struk belanja.</p></div>
+        </div>
+        <div class="card card-pad" style="max-width:520px;">
+          <div class="field"><label>Nama Toko</label><input type="text" id="setNamaToko"></div>
+          <div class="field"><label>Alamat Toko</label><textarea id="setAlamat" rows="2"></textarea></div>
+          <div class="field"><label>No. Telepon</label><input type="text" id="setTelepon"></div>
+          <div class="field"><label>Catatan Kaki Struk</label><input type="text" id="setFooter" placeholder="cth. Terima kasih telah berbelanja"></div>
+          <button class="btn btn-primary" id="btnSimpanSetting">Simpan Pengaturan</button>
+        </div>
+      </section>
+
+      <!-- ===================== USER ===================== -->
+      <section class="page" id="page-user">
+        <div class="page-head">
+          <div><div class="eyebrow">Sistem</div><h2>Manajemen User</h2><p>Kelola akun admin dan kasir.</p></div>
+          <button class="btn btn-gold" id="btnTambahUser">+ Tambah User</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Username</th><th>Nama</th><th>Role</th><th></th></tr></thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: BARANG
+     ============================================================ -->
+<div class="modal-backdrop" id="modalBarang">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalBarangTitle">Tambah Barang</h3>
+      <button class="modal-close" data-close>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="brgId">
+      <div class="field">
+        <label>Kode Barang</label>
+        <input type="text" id="brgKode" readonly>
+      </div>
+      <div class="field">
+        <label>Barcode (Opsional / Scan)</label>
+        <input type="text" id="brgBarcode" placeholder="Scan atau ketik barcode">
+      </div>
+      <div class="field">
+        <label>Kategori</label>
+        <input type="text" id="brgKategori" placeholder="Contoh: Sembako, Minuman">
+      </div>
+      <div class="field">
+        <label>Nama Barang</label>
+        <input type="text" id="brgNama" placeholder="Nama barang">
+      </div>
+      <div class="field">
+        <label>Satuan</label>
+        <input type="text" id="brgSatuan" placeholder="Contoh: Pcs, Kg, Botol">
+      </div>
+      <div class="field">
+        <label>Stok Awal</label>
+        <input type="number" id="brgStok" value="0">
+      </div>
+      <div class="field">
+        <label>Harga Beli (Modal)</label>
+        <input type="number" id="brgHargaBeli" value="0">
+      </div>
+      <div class="field">
+        <label>Margin Keuntungan (%) - *Otomatis Hitung Harga Jual*</label>
+        <input type="number" id="brgMargin" placeholder="Contoh: 20">
+      </div>
+      <div class="field">
+        <label>Harga Jual (Otomatis)</label>
+        <input type="number" id="brgHargaJual" value="0">
+      </div>
+      <div class="field">
+        <label>Stok Minimal (Peringatan)</label>
+        <input type="number" id="brgStokMin" value="5">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-close>Batal</button>
+      <button class="btn btn-primary" id="btnSimpanBarang">Simpan Barang</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: USER
+     ============================================================ -->
+<div class="modal-backdrop" id="modalUser">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modalUserTitle">Tambah User</h3><button class="modal-close" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="usrId">
+      <div class="field"><label>Username</label><input type="text" id="usrUsername"></div>
+      <div class="field"><label>Nama Lengkap</label><input type="text" id="usrNama"></div>
+      <div class="field"><label>Role</label>
+        <select id="usrRole"><option value="admin">Admin</option><option value="kasir">Kasir</option></select>
+      </div>
+      <div class="field"><label id="usrPassLabel">Password</label><input type="password" id="usrPassword" placeholder="Minimal 4 karakter"></div>
+      <p style="font-size:11.5px;color:var(--ink-faint);margin:-6px 0 0;">*Saat mengedit, kosongkan password bila tidak ingin mengubahnya.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-close>Batal</button>
+      <button class="btn btn-primary" id="btnSimpanUser">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
