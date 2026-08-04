@@ -29,12 +29,6 @@ function fmtTanggal(iso) {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
-async function sha256(text) {
-  const enc = new TextEncoder().encode(text);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 function toast(msg, type) {
   const el = document.createElement('div');
   el.className = 'toast' + (type ? ' toast-' + type : '');
@@ -52,6 +46,44 @@ function generateNomor(prefix) {
   const ymd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
   const rnd = Math.floor(1000 + Math.random() * 9000);
   return prefix + '-' + ymd + '-' + rnd;
+}
+
+/* ============================================================
+   MODAL KONFIRMASI KUSTOM (Pengganti Confirm Bawaan)
+   ============================================================ */
+function tampilkanKonfirmasi({ icon = '⚠️', title = 'Konfirmasi', text = 'Apakah Anda yakin?', textBtnYa = 'Ya, Lanjutkan', isDanger = true, onYes }) {
+  const modal = document.getElementById('modalKonfirmasi');
+  if (!modal) {
+    if (confirm(text)) onYes();
+    return;
+  }
+  document.getElementById('konfirmasiIcon').textContent = icon;
+  document.getElementById('modalKonfirmasiTitle').textContent = title;
+  document.getElementById('modalKonfirmasiText').textContent = text;
+  
+  const btnYa = document.getElementById('btnKonfirmasiYa');
+  btnYa.textContent = textBtnYa;
+  btnYa.className = isDanger ? 'btn btn-danger' : 'btn btn-primary';
+  btnYa.style.flex = '1';
+  btnYa.style.justifyContent = 'center';
+
+  const newBtnYa = btnYa.cloneNode(true);
+  btnYa.parentNode.replaceChild(newBtnYa, btnYa);
+
+  const btnBatal = document.getElementById('btnKonfirmasiBatal');
+  const newBtnBatal = btnBatal.cloneNode(true);
+  btnBatal.parentNode.replaceChild(newBtnBatal, btnBatal);
+
+  newBtnYa.addEventListener('click', () => {
+    modal.classList.remove('show');
+    if (onYes) onYes();
+  });
+
+  newBtnBatal.addEventListener('click', () => {
+    modal.classList.remove('show');
+  });
+
+  modal.classList.add('show');
 }
 
 /* ============================================================
@@ -115,47 +147,63 @@ async function dbDelete(store, id) { const s = await tx(store, 'readwrite'); ret
 async function dbGetAll(store) { const s = await tx(store); return wrap(s.getAll()); }
 async function dbGetByIndex(store, idx, val) { const s = await tx(store); return wrap(s.index(idx).get(val)); }
 
+/* ============================================================
+   SEED DATA & LOGIN (Versi Anti-Gagal / Tanpa Enkripsi)
+   ============================================================ */
 async function seedIfEmpty() {
-  const users = await dbGetAll('users');
-  if (users.length === 0) {
-    const hash = await sha256('admin123');
-    await dbAdd('users', { username: 'admin', password: hash, nama: 'Administrator', role: 'admin' });
-  }
-  const settings = await dbGet('settings', 1);
-  if (!settings) {
-    await dbPut('settings', { id: 1, namaToko: 'Toko Saya', alamat: 'Jl. Contoh No. 1', telepon: '08123456789', footer: 'Terima kasih telah berbelanja di toko kami' });
-  }
-  const products = await dbGetAll('products');
-  if (products.length === 0) {
-    const sample = [
-      { kode: 'BRG100001', barcode: '8991002135376', nama: 'Beras 5kg', kategori: 'Sembako', satuan: 'Karung', hargaBeli: 60000, hargaJual: 68000, stok: 20, stokMin: 5 },
-      { kode: 'BRG100002', barcode: '', nama: 'Minyak Goreng 1L', kategori: 'Sembako', satuan: 'Botol', hargaBeli: 15000, hargaJual: 18000, stok: 30, stokMin: 10 },
-      { kode: 'BRG100003', barcode: '', nama: 'Gula Pasir 1kg', kategori: 'Sembako', satuan: 'Kg', hargaBeli: 12000, hargaJual: 14500, stok: 25, stokMin: 8 },
-      { kode: 'BRG100004', barcode: '', nama: 'Indomie Goreng', kategori: 'Mie Instan', satuan: 'Pcs', hargaBeli: 2800, hargaJual: 3500, stok: 100, stokMin: 20 },
-      { kode: 'BRG100005', barcode: '', nama: 'Air Mineral 600ml', kategori: 'Minuman', satuan: 'Botol', hargaBeli: 2500, hargaJual: 4000, stok: 50, stokMin: 15 },
-    ];
-    for (const p of sample) await dbAdd('products', p);
+  try {
+    const users = await dbGetAll('users');
+    if (!users || users.length === 0) {
+      await dbAdd('users', { username: 'admin', password: 'admin123', nama: 'Administrator', role: 'admin' });
+    }
+    const settings = await dbGet('settings', 1);
+    if (!settings) {
+      await dbPut('settings', { id: 1, namaToko: 'Toko Saya', alamat: 'Jl. Contoh No. 1', telepon: '08123456789', footer: 'Terima kasih telah berbelanja di toko kami' });
+    }
+    const products = await dbGetAll('products');
+    if (!products || products.length === 0) {
+      const sample = [
+        { kode: 'BRG100001', barcode: '8991002135376', nama: 'Beras 5kg', expire: '', kategori: 'Sembako', satuan: 'Karung', hargaBeli: 60000, hargaJual: 68000, stok: 20, stokMin: 5 },
+        { kode: 'BRG100002', barcode: '', nama: 'Minyak Goreng 1L', expire: '', kategori: 'Sembako', satuan: 'Botol', hargaBeli: 15000, hargaJual: 18000, stok: 30, stokMin: 10 },
+        { kode: 'BRG100003', barcode: '', nama: 'Gula Pasir 1kg', expire: '', kategori: 'Sembako', satuan: 'Kg', hargaBeli: 12000, hargaJual: 14500, stok: 25, stokMin: 8 },
+        { kode: 'BRG100004', barcode: '', nama: 'Indomie Goreng', expire: '', kategori: 'Mie Instan', satuan: 'Pcs', hargaBeli: 2800, hargaJual: 3500, stok: 100, stokMin: 20 },
+        { kode: 'BRG100005', barcode: '', nama: 'Air Mineral 600ml', expire: '', kategori: 'Minuman', satuan: 'Botol', hargaBeli: 2500, hargaJual: 4000, stok: 50, stokMin: 15 },
+      ];
+      for (const p of sample) await dbAdd('products', p);
+    }
+  } catch (err) {
+    console.error("Gagal melakukan seed data:", err);
   }
 }
 
-/* ============================================================
-   AUTH
-   ============================================================ */
 let currentUser = null;
 
 async function doLogin(username, password) {
-  const user = await dbGetByIndex('users', 'username', username.trim());
-  if (!user) return { ok: false, msg: 'Username tidak ditemukan' };
-  const hash = await sha256(password);
-  if (hash !== user.password) return { ok: false, msg: 'Password salah' };
-  currentUser = user;
-  sessionStorage.setItem('ipos_uid', String(user.id));
-  return { ok: true };
+  try {
+    const user = await dbGetByIndex('users', 'username', username.trim());
+    if (!user) return { ok: false, msg: 'Username tidak ditemukan' };
+    if (password !== user.password) return { ok: false, msg: 'Password salah' };
+    currentUser = user;
+    sessionStorage.setItem('ipos_uid', String(user.id));
+    return { ok: true };
+  } catch (err) {
+    console.error("Error saat login:", err);
+    return { ok: false, msg: 'Terjadi kesalahan sistem' };
+  }
 }
 
 function doLogout() {
-  sessionStorage.removeItem('ipos_uid');
-  location.reload();
+  tampilkanKonfirmasi({
+    icon: '⁉️',
+    title: 'Keluar Aplikasi',
+    text: 'Apakah Anda yakin ingin keluar dari sesi kasir ini?',
+    textBtnYa: 'Ya, Keluar',
+    isDanger: true,
+    onYes: () => {
+      sessionStorage.removeItem('ipos_uid');
+      location.reload();
+    }
+  });
 }
 
 async function tryRestoreSession() {
@@ -177,11 +225,13 @@ function goPage(name) {
   const target = document.getElementById('page-' + name);
   if (target) target.classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === name));
-  document.getElementById('sidebar').classList.remove('open');
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('open');
   if (renderers[name]) renderers[name]();
 }
 
 function initShellForUser() {
+  if (!currentUser) return;
   document.body.classList.toggle('role-kasir', currentUser.role !== 'admin');
   document.getElementById('avatarInitial').textContent = (currentUser.nama || '?').charAt(0).toUpperCase();
   document.getElementById('chipNama').textContent = currentUser.nama;
@@ -244,19 +294,22 @@ renderers.dashboard = renderDashboard;
    ============================================================ */
 async function renderBarang() {
   const products = await dbGetAll('products');
-  const q = (document.getElementById('barangSearch').value || '').toLowerCase();
+  const searchEl = document.getElementById('barangSearch');
+  const q = searchEl ? (searchEl.value || '').toLowerCase() : '';
   const filtered = products.filter(p => p.nama.toLowerCase().includes(q) || p.kode.toLowerCase().includes(q) || (p.barcode && p.barcode.toLowerCase().includes(q)));
   const body = document.getElementById('barangTableBody');
+  if (!body) return;
   if (filtered.length === 0) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="9">Belum ada barang. Klik "+ Tambah Barang" untuk mulai.</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="11">Belum ada barang. Klik "+ Tambah Barang" untuk mulai.</td></tr>';
     return;
   }
   body.innerHTML = filtered.map(p => {
     const low = p.stok <= p.stokMin;
     return `<tr>
       <td style="font-family:var(--font-mono);">${esc(p.kode)}</td>
-      <td style="font-family:var(--font-mono); color:#555;">${esc(p.barcode || '-')}</td>
+      <td style="font-family:var(--font-mono); color:#555; display:none;">${esc(p.barcode || '-')}</td>
       <td>${esc(p.nama)}</td>
+      <td>${esc(p.expire || '-')}</td>
       <td>${esc(p.kategori || '-')}</td>
       <td>${esc(p.satuan || '-')}</td>
       <td>${formatRupiah(p.hargaBeli)}</td>
@@ -306,6 +359,8 @@ function resetBarangForm() {
   document.getElementById('brgKode').value = '';
   const inputBarcode = document.getElementById('brgBarcode');
   if (inputBarcode) inputBarcode.value = '';
+  const inputExpire = document.getElementById('brgExpire');
+  if (inputExpire) inputExpire.value = '';
   document.getElementById('brgKategori').value = '';
   document.getElementById('brgNama').value = '';
   document.getElementById('brgSatuan').value = '';
@@ -317,62 +372,49 @@ function resetBarangForm() {
   document.getElementById('brgStokMin').value = '5';
 }
 
-// Logika Kalkulasi Otomatis Harga Jual berdasarkan Harga Beli & Margin Persen
 function hitungOtomatisHargaJual() {
   const inputHrgBeli = document.getElementById('brgHargaBeli');
   const inputMargin = document.getElementById('brgMargin');
   const inputHrgJual = document.getElementById('brgHargaJual');
-  
   if (!inputHrgBeli || !inputHrgJual) return;
-  
   const hrgBeli = parseFloat(inputHrgBeli.value) || 0;
   const margin = inputMargin ? (parseFloat(inputMargin.value) || 0) : 0;
-  
-  // Jika ada input margin, hitung otomatis
   if (margin > 0) {
     let hargaJualHitung = hrgBeli + (hrgBeli * (margin / 100));
     inputHrgJual.value = Math.round(hargaJualHitung);
   }
 }
 
-// Pasang event listener untuk kalkulasi otomatis
 const elHrgBeli = document.getElementById('brgHargaBeli');
 const elMargin = document.getElementById('brgMargin');
 if (elHrgBeli) elHrgBeli.addEventListener('input', hitungOtomatisHargaJual);
 if (elMargin) elMargin.addEventListener('input', hitungOtomatisHargaJual);
 
-// Saat Tambah Barang
-document.getElementById('btnTambahBarang').addEventListener('click', async () => {
-  resetBarangForm();
-  await generateKodeBarangOtomatis(); 
-  
-  const inputKode = document.getElementById('brgKode');
-  if (inputKode) {
-    inputKode.readOnly = true; 
-  }
-  
-  document.getElementById('modalBarangTitle').textContent = 'Tambah Barang';
-  openModal('modalBarang');
-});
+const btnTambahBarangEl = document.getElementById('btnTambahBarang');
+if (btnTambahBarangEl) {
+  btnTambahBarangEl.addEventListener('click', async () => {
+    resetBarangForm();
+    await generateKodeBarangOtomatis(); 
+    const inputKode = document.getElementById('brgKode');
+    if (inputKode) { inputKode.readOnly = true; }
+    document.getElementById('modalBarangTitle').textContent = 'Tambah Barang';
+    openModal('modalBarang');
+  });
+}
 
-// Saat Edit Barang
 async function editBarang(id) {
   const p = await dbGet('products', id);
   if (!p) return;
-  
   document.getElementById('brgId').value = p.id;
-  
   const inputKode = document.getElementById('brgKode');
   if (inputKode) {
     inputKode.value = p.kode;
     inputKode.readOnly = true;
   }
-  
   const inputBarcode = document.getElementById('brgBarcode');
-  if (inputBarcode) {
-    inputBarcode.value = p.barcode || '';
-  }
-  
+  if (inputBarcode) { inputBarcode.value = p.barcode || ''; }
+  const inputExpire = document.getElementById('brgExpire');
+  if (inputExpire) { inputExpire.value = p.expire || ''; }
   document.getElementById('brgKategori').value = p.kategori || '';
   document.getElementById('brgNama').value = p.nama;
   document.getElementById('brgSatuan').value = p.satuan || '';
@@ -387,62 +429,71 @@ async function editBarang(id) {
   } else if (inputMargin) {
     inputMargin.value = '';
   }
-
   document.getElementById('brgStokMin').value = p.stokMin;
-  
   document.getElementById('modalBarangTitle').textContent = 'Edit Barang';
   openModal('modalBarang');
 }
 
 async function hapusBarang(id) {
-  if (!confirm('Hapus barang ini? Tindakan tidak dapat dibatalkan.')) return;
-  await dbDelete('products', id);
-  toast('Barang dihapus', 'success');
-  renderBarang();
+  const p = await dbGet('products', id);
+  const namaBarang = p ? p.nama : 'Barang ini';
+  tampilkanKonfirmasi({
+    icon: '🗑️',
+    title: 'Hapus Barang',
+    text: `Apakah Anda yakin ingin menghapus "${namaBarang}"? Tindakan ini tidak dapat dibatalkan.`,
+    textBtnYa: 'Ya, Hapus',
+    isDanger: true,
+    onYes: async () => {
+      await dbDelete('products', id);
+      toast('Barang berhasil dihapus', 'success');
+      renderBarang();
+    }
+  });
 }
 
-document.getElementById('btnSimpanBarang').addEventListener('click', async () => {
-  const id = document.getElementById('brgId').value;
-  const kode = document.getElementById('brgKode').value.trim();
-  const barcode = document.getElementById('brgBarcode') ? document.getElementById('brgBarcode').value.trim() : '';
-  const nama = document.getElementById('brgNama').value.trim();
-  const hargaBeli = Number(document.getElementById('brgHargaBeli').value) || 0;
-  const hargaJual = Number(document.getElementById('brgHargaJual').value) || 0;
+const btnSimpanBarangEl = document.getElementById('btnSimpanBarang');
+if (btnSimpanBarangEl) {
+  btnSimpanBarangEl.addEventListener('click', async () => {
+    const id = document.getElementById('brgId').value;
+    const kode = document.getElementById('brgKode').value.trim();
+    const barcode = document.getElementById('brgBarcode') ? document.getElementById('brgBarcode').value.trim() : '';
+    const expire = document.getElementById('brgExpire') ? document.getElementById('brgExpire').value.trim() : '';
+    const nama = document.getElementById('brgNama').value.trim();
+    const hargaBeli = Number(document.getElementById('brgHargaBeli').value) || 0;
+    const hargaJual = Number(document.getElementById('brgHargaJual').value) || 0;
 
-  if (!kode || !nama) { toast('Kode dan Nama wajib diisi', 'error'); return; }
-  
-  if (hargaJual < hargaBeli) {
-    toast('Peringatan: Harga jual tidak boleh lebih kecil dari harga beli!', 'error');
-    return;
-  }
-
-  const obj = {
-    kode, 
-    barcode, 
-    nama,
-    kategori: document.getElementById('brgKategori').value.trim(),
-    satuan: document.getElementById('brgSatuan').value.trim(),
-    stok: Number(document.getElementById('brgStok').value) || 0,
-    hargaBeli: hargaBeli,
-    hargaJual: hargaJual,
-    stokMin: Number(document.getElementById('brgStokMin').value) || 0,
-  };
-
-  try {
-    if (id) {
-      obj.id = Number(id);
-      await dbPut('products', obj);
-      toast('Barang diperbarui', 'success');
-    } else {
-      const dup = await dbGetByIndex('products', 'kode', kode);
-      if (dup) { toast('Kode barang sudah dipakai', 'error'); return; }
-      await dbAdd('products', obj);
-      toast('Barang ditambahkan', 'success');
+    if (!kode || !nama) { toast('Kode dan Nama wajib diisi', 'error'); return; }
+    if (hargaJual < hargaBeli) {
+      toast('Peringatan: Harga jual tidak boleh lebih kecil dari harga beli!', 'error');
+      return;
     }
-    closeModal('modalBarang');
-    renderBarang();
-  } catch (err) { toast('Gagal menyimpan: ' + err.message, 'error'); }
-});
+
+    const obj = {
+      kode, barcode, expire, nama,
+      kategori: document.getElementById('brgKategori').value.trim(),
+      satuan: document.getElementById('brgSatuan').value.trim(),
+      stok: Number(document.getElementById('brgStok').value) || 0,
+      hargaBeli: hargaBeli,
+      hargaJual: hargaJual,
+      stokMin: Number(document.getElementById('brgStokMin').value) || 0,
+    };
+
+    try {
+      if (id) {
+        obj.id = Number(id);
+        await dbPut('products', obj);
+        toast('Barang diperbarui', 'success');
+      } else {
+        const dup = await dbGetByIndex('products', 'kode', kode);
+        if (dup) { toast('Kode barang sudah dipakai', 'error'); return; }
+        await dbAdd('products', obj);
+        toast('Barang ditambahkan', 'success');
+      }
+      closeModal('modalBarang');
+      renderBarang();
+    } catch (err) { toast('Gagal menyimpan: ' + err.message, 'error'); }
+  });
+}
 
 const searchBarangEl = document.getElementById('barangSearch');
 if (searchBarangEl) searchBarangEl.addEventListener('input', renderBarang);
@@ -490,15 +541,14 @@ function renderProductGrid() {
   }
 
   grid.innerHTML = filtered.map(p => {
-    const out = p.stok <= 0;
-    const low = p.stok > 0 && p.stok <= p.stokMin;
-    return `<div class="product-card ${out ? 'out' : ''}" ${out ? '' : `onclick="addToCart(${p.id})"`}>
-      <span class="pc-kode">${esc(p.kode)} ${p.barcode ? '• ' + esc(p.barcode) : ''}</span>
-      <span class="pc-nama">${esc(p.nama)}</span>
-      <span class="pc-harga">${formatRupiah(p.hargaJual)}</span>
-      <span class="pc-stok ${low ? 'low' : ''}">${out ? 'Stok habis' : 'Stok: ' + p.stok + ' ' + esc(p.satuan || '')}</span>
-    </div>`;
-  }).join('');
+  const out = p.stok <= 0;
+  const low = p.stok > 0 && p.stok <= p.stokMin;
+  return `<div class="product-card ${out ? 'out' : ''}" ${out ? '' : `onclick="addToCart(${p.id})"`}>
+    <span class="pc-kode">${esc(p.kode)}</span> <span class="pc-nama">${esc(p.nama)}</span>
+    <span class="pc-harga">${formatRupiah(p.hargaJual)}</span>
+    <span class="pc-stok ${low ? 'low' : ''}">${out ? 'Stok habis' : 'Stok: ' + p.stok + ' ' + esc(p.satuan || '')}</span>
+  </div>`;
+}).join('');
 }
 
 const posSearchEl = document.getElementById('posSearch');
@@ -533,23 +583,15 @@ function removeFromCart(productId) { cart = cart.filter(i => i.productId !== pro
 const btnClearCartEl = document.getElementById('btnClearCart');
 if (btnClearCartEl) btnClearCartEl.addEventListener('click', () => { cart = []; renderCart(); });
 
-function getCartSubtotal() { 
-  return cart.reduce((a, i) => a + i.harga * i.qty, 0); 
-}
+function getCartSubtotal() { return cart.reduce((a, i) => a + i.harga * i.qty, 0); }
 
 function getDiskon() { 
   const el = document.getElementById('inputDiskon');
   const persenDiskon = el ? (Number(el.value) || 0) : 0;
-  const subtotal = getCartSubtotal();
-  
-  // Menghitung nominal rupiah dari persentase diskon yang dimasukkan kasir
-  let nilaiDiskonRupiah = subtotal * (persenDiskon / 100);
-  return nilaiDiskonRupiah; 
+  return getCartSubtotal() * (persenDiskon / 100); 
 }
 
-function getCartTotal() { 
-  return Math.max(0, getCartSubtotal() - getDiskon()); 
-}
+function getCartTotal() { return Math.max(0, getCartSubtotal() - getDiskon()); }
 
 function renderCart() {
   const box = document.getElementById('cartItems');
@@ -608,10 +650,7 @@ function renderPayQuick() {
 
 function setBayar(v) { 
   const el = document.getElementById('inputBayar');
-  if (el) {
-    el.value = v; 
-    updateKembalian(); 
-  }
+  if (el) { el.value = v; updateKembalian(); }
 }
 
 const btnBayarEl = document.getElementById('btnBayar');
@@ -997,10 +1036,18 @@ async function hapusUser(id) {
   if (target.role === 'admin' && users.filter(u => u.role === 'admin').length <= 1) {
     toast('Tidak bisa menghapus satu-satunya akun admin', 'error'); return;
   }
-  if (!confirm('Hapus user ini?')) return;
-  await dbDelete('users', id);
-  toast('User dihapus', 'success');
-  renderUser();
+  tampilkanKonfirmasi({
+    icon: '👤',
+    title: 'Hapus User',
+    text: `Apakah Anda yakin ingin menghapus user "${target.nama}"?`,
+    textBtnYa: 'Ya, Hapus',
+    isDanger: true,
+    onYes: async () => {
+      await dbDelete('users', id);
+      toast('User dihapus', 'success');
+      renderUser();
+    }
+  });
 }
 
 const btnSimpanUserEl = document.getElementById('btnSimpanUser');
@@ -1016,14 +1063,14 @@ if (btnSimpanUserEl) {
       if (id) {
         const u = await dbGet('users', Number(id));
         u.username = username; u.nama = nama; u.role = role;
-        if (password) { if (password.length < 4) { toast('Password minimal 4 karakter', 'error'); return; } u.password = await sha256(password); }
+        if (password) { if (password.length < 4) { toast('Password minimal 4 karakter', 'error'); return; } u.password = password; }
         await dbPut('users', u);
         toast('User diperbarui', 'success');
       } else {
         if (!password || password.length < 4) { toast('Password minimal 4 karakter', 'error'); return; }
         const dup = await dbGetByIndex('users', 'username', username);
         if (dup) { toast('Username sudah digunakan', 'error'); return; }
-        await dbAdd('users', { username, nama, role, password: await sha256(password) });
+        await dbAdd('users', { username, nama, role, password });
         toast('User ditambahkan', 'success');
       }
       closeModal('modalUser');
@@ -1053,7 +1100,7 @@ document.querySelectorAll('.modal-backdrop').forEach(bd => {
 const btnLogoutEl = document.getElementById('btnLogout');
 if (btnLogoutEl) {
   btnLogoutEl.addEventListener('click', () => {
-    if (confirm('Keluar dari aplikasi?')) doLogout();
+    doLogout();
   });
 }
 

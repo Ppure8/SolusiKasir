@@ -368,9 +368,6 @@ body.role-kasir [data-role-only]{display:none;}
 </head>
 <body>
 
-<!-- ============================================================
-     LOGIN SCREEN
-     ============================================================ -->
 <div id="loginScreen">
   <div class="login-card">
     <div class="login-brand">
@@ -392,14 +389,11 @@ body.role-kasir [data-role-only]{display:none;}
   </div>
 </div>
 
-<!-- ============================================================
-     APP SHELL
-     ============================================================ -->
 <div id="appShell">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 21V13h6v8"/></svg></div>
-      <div><h1>iPOS Kasir</h1><span>v1.0 · IndexedDB</span></div>
+      <div><h1>iPOS Kasir</h1><span>v1.0 · web kasir</span></div>
     </div>
 
     <div class="nav-group-label">Utama</div>
@@ -439,7 +433,6 @@ body.role-kasir [data-role-only]{display:none;}
 
     <div class="content">
 
-      <!-- ===================== DASHBOARD ===================== -->
       <section class="page" id="page-dashboard">
         <div class="page-head">
           <div><div class="eyebrow">Ringkasan</div><h2>Dashboard</h2><p>Ikhtisar performa toko hari ini.</p></div>
@@ -459,7 +452,6 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
       </section>
 
-      <!-- ===================== PENJUALAN (POS) ===================== -->
       <section class="page" id="page-penjualan">
         <div class="page-head">
           <div><div class="eyebrow">Kasir</div><h2>Penjualan</h2><p>Pilih barang, atur jumlah, lalu proses pembayaran.</p></div>
@@ -469,8 +461,6 @@ body.role-kasir [data-role-only]{display:none;}
             <div class="search-box">
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
               <input type="text" id="posSearch" placeholder="Cari nama atau kode barang...">
-              <!-- Input Kode Barang menjadi Readonly -->
-<input type="text" id="kodeBarang" name="kodeBarang" readonly placeholder="Otomatis terisi...">
             </div>
             <div class="product-grid" id="posProductGrid"></div>
           </div>
@@ -508,7 +498,6 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
       </section>
 
-      <!-- ===================== PEMBELIAN ===================== -->
       <section class="page" id="page-pembelian">
         <div class="page-head">
           <div><div class="eyebrow">Stok Masuk</div><h2>Pembelian</h2><p>Catat pembelian barang dari supplier — stok otomatis bertambah.</p></div>
@@ -542,7 +531,6 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
       </section>
 
-      <!-- ===================== MASTER BARANG ===================== -->
       <section class="page" id="page-barang">
         <div class="page-head">
           <div><div class="eyebrow">Data</div><h2>Master Barang</h2><p>Kelola daftar produk, harga, dan stok.</p></div>
@@ -554,13 +542,25 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Kode</th><th>Barcode</th><th>Nama</th><th>Kategori</th><th>Satuan</th><th>Harga Beli</th><th>Harga Jual</th><th>Stok</th><th>Status</th><th></th></tr></thead>
+            <thead>
+  <tr>
+    <th style="font-family:var(--font-mono);">Kode</th>
+    <th style="font-family:var(--font-mono); display:none;">No Barcode</th> <th>Nama Barang</th>
+    <th>Expire</th>
+    <th>Kategori</th>
+    <th>Satuan</th>
+    <th>Harga Beli</th>
+    <th>Harga Jual</th>
+    <th>Stok</th>
+    <th>Status</th>
+    <th>Aksi</th>
+  </tr>
+</thead>
             <tbody id="barangTableBody"></tbody>
           </table>
         </div>
       </section>
 
-      <!-- ===================== LAPORAN PENJUALAN ===================== -->
       <section class="page" id="page-laporanPenjualan">
         <div class="page-head">
           <div><div class="eyebrow">Laporan</div><h2>Laporan Penjualan</h2><p>Rekap transaksi penjualan berdasarkan periode.</p></div>
@@ -579,7 +579,6 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
       </section>
 
-      <!-- ===================== LAPORAN PEMBELIAN ===================== -->
       <section class="page" id="page-laporanPembelian">
         <div class="page-head">
           <div><div class="eyebrow">Laporan</div><h2>Laporan Pembelian</h2><p>Rekap transaksi pembelian barang berdasarkan periode.</p></div>
@@ -598,7 +597,6 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
       </section>
 
-      <!-- ===================== PENGATURAN ===================== -->
       <section class="page" id="page-pengaturan">
         <div class="page-head">
           <div><div class="eyebrow">Sistem</div><h2>Pengaturan Toko</h2><p>Informasi ini akan tampil pada struk belanja.</p></div>
@@ -612,7 +610,6 @@ body.role-kasir [data-role-only]{display:none;}
         </div>
       </section>
 
-      <!-- ===================== USER ===================== -->
       <section class="page" id="page-user">
         <div class="page-head">
           <div><div class="eyebrow">Sistem</div><h2>Manajemen User</h2><p>Kelola akun admin dan kasir.</p></div>
@@ -630,9 +627,6 @@ body.role-kasir [data-role-only]{display:none;}
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: BARANG
-     ============================================================ -->
 <div class="modal-backdrop" id="modalBarang">
   <div class="modal">
     <div class="modal-head">
@@ -658,6 +652,10 @@ body.role-kasir [data-role-only]{display:none;}
       <div class="field">
         <label>Nama Barang</label>
         <input type="text" id="brgNama" placeholder="Nama barang">
+      </div>
+      <div class="field">
+        <label>Expire Date</label>
+        <input type="date" id="brgExpire">
       </div>
       <div class="field">
         <label>Satuan</label>
@@ -691,9 +689,24 @@ body.role-kasir [data-role-only]{display:none;}
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: USER
-     ============================================================ -->
+<div class="modal-backdrop" id="modalHapusBarang">
+  <div class="modal" style="max-width: 400px; text-align: center; padding: 10px;">
+    <div class="modal-body" style="padding: 30px 20px 20px;">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--danger-light); color: var(--danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px;"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+      </div>
+      <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--ink);">Hapus Barang Ini?</h3>
+      <p id="hapusBarangInfo" style="font-size: 13.5px; color: var(--ink-faint); margin: 0 0 10px; line-height: 1.5;">
+        Tindakan ini tidak dapat dibatalkan. Data barang akan dihapus permanen dari inventaris.
+      </p>
+    </div>
+    <div class="modal-foot" style="justify-content: center; border: none; background: transparent; padding: 0 20px 20px; gap: 12px;">
+      <button class="btn btn-outline" data-close style="flex: 1; justify-content: center;">Batal</button>
+      <button class="btn btn-danger" id="btnKonfirmasiHapus" style="flex: 1; justify-content: center;">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modalUser">
   <div class="modal">
     <div class="modal-head"><h3 id="modalUserTitle">Tambah User</h3><button class="modal-close" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
@@ -717,5 +730,16 @@ body.role-kasir [data-role-only]{display:none;}
 <div id="toastContainer"></div>
 
 <script src="app.js"></script>
+<div class="modal-backdrop" id="modalKonfirmasi">
+  <div class="modal" style="max-width: 400px; text-align: center; padding: 32px 24px;">
+    <div id="konfirmasiIcon" style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+    <h3 id="modalKonfirmasiTitle" style="margin-bottom: 8px; font-size: 20px;">Konfirmasi</h3>
+    <p id="modalKonfirmasiText" style="color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; line-height: 1.5;">Apakah Anda yakin?</p>
+    <div style="display: flex; gap: 12px;">
+      <button class="btn btn-outline" style="flex: 1; justify-content: center;" id="btnKonfirmasiBatal">Batal</button>
+      <button class="btn btn-danger" style="flex: 1; justify-content: center;" id="btnKonfirmasiYa">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
