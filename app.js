@@ -540,15 +540,33 @@ function renderProductGrid() {
     }
   }
 
-  grid.innerHTML = filtered.map(p => {
-  const out = p.stok <= 0;
-  const low = p.stok > 0 && p.stok <= p.stokMin;
-  return `<div class="product-card ${out ? 'out' : ''}" ${out ? '' : `onclick="addToCart(${p.id})"`}>
-    <span class="pc-kode">${esc(p.kode)}</span> <span class="pc-nama">${esc(p.nama)}</span>
-    <span class="pc-harga">${formatRupiah(p.hargaJual)}</span>
-    <span class="pc-stok ${low ? 'low' : ''}">${out ? 'Stok habis' : 'Stok: ' + p.stok + ' ' + esc(p.satuan || '')}</span>
-  </div>`;
-}).join('');
+  let tableHtml = `<div class="table-wrap" style="border:1px solid var(--border-soft); border-radius:var(--radius-sm);">
+    <table style="width: 100%; margin: 0;">
+      <thead style="position: sticky; top: 0; background: var(--surface-2); z-index: 1;">
+        <tr>
+          <th>Kode</th>
+          <th>Nama Barang</th>
+          <th>Harga</th>
+          <th>Stok</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  tableHtml += filtered.map(p => {
+    const out = p.stok <= 0;
+    const low = p.stok > 0 && p.stok <= p.stokMin;
+    
+    // Tambahkan class "pos-item-row" dan tabindex="0" (kecuali jika stok habis)
+    return `<tr class="pos-item-row" ${out ? '' : 'tabindex="0"'} style="cursor: pointer; outline: none; ${out ? 'opacity: 0.5;' : ''}" ${out ? '' : `onclick="addToCart(${p.id})"`}>
+      <td style="font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);">${esc(p.kode)}</td>
+      <td style="font-weight:600; font-size:13px;">${esc(p.nama)}</td>
+      <td style="font-family:var(--font-mono); color:var(--primary-dark); font-weight:700;">${formatRupiah(p.hargaJual)}</td>
+      <td style="${low ? 'color:var(--danger); font-weight:bold;' : 'color:var(--ink-faint);'}">${out ? 'Habis' : p.stok + ' ' + esc(p.satuan || '')}</td>
+    </tr>`;
+  }).join('');
+
+  tableHtml += `</tbody></table></div>`;
+  grid.innerHTML = tableHtml;
 }
 
 const posSearchEl = document.getElementById('posSearch');
@@ -1150,3 +1168,46 @@ async function startApp() {
   const restored = await tryRestoreSession();
   if (restored) { startApp(); }
 })();
+
+/* ============================================================
+   NAVIGASI KEYBOARD POS
+   ============================================================ */
+document.addEventListener('keydown', function(e) {
+  const pagePenjualan = document.getElementById('page-penjualan');
+  if (!pagePenjualan || !pagePenjualan.classList.contains('active')) return;
+
+  const activeEl = document.activeElement;
+
+  // 1. Jika di kolom pencarian lalu menekan TAB atau Panah Bawah
+  if ((e.key === 'Tab' || e.key === 'ArrowDown') && activeEl.id === 'posSearch') {
+    e.preventDefault(); // Mencegah fungsi tab bawaan browser
+    const firstRow = document.querySelector('.pos-item-row[tabindex="0"]');
+    if (firstRow) firstRow.focus();
+  }
+
+  // 2. Jika sedang fokus memilih baris barang
+  if (activeEl.classList.contains('pos-item-row')) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      let next = activeEl.nextElementSibling;
+      while (next && !next.hasAttribute('tabindex')) { next = next.nextElementSibling; } // Lewati barang habis
+      if (next) next.focus();
+    } 
+    else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      let prev = activeEl.previousElementSibling;
+      while (prev && !prev.hasAttribute('tabindex')) { prev = prev.previousElementSibling; }
+      if (prev) {
+        prev.focus();
+      } else {
+        // Jika sudah di paling atas, kembalikan kursor ke kolom pencarian
+        const searchInput = document.getElementById('posSearch');
+        if (searchInput) searchInput.focus();
+      }
+    } 
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      activeEl.click(); // Otomatis memasukkan barang ke keranjang
+    }
+  }
+});

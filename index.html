@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>iPOS Kasir — Aplikasi Kasir Toko</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F6E5C">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -364,6 +366,15 @@ body.role-kasir [data-role-only]{display:none;}
   .stat-grid{grid-template-columns:1fr 1fr;}
   .content{padding:18px 14px 50px;}
 }
+
+/* Warna saat baris barang disorot kursor keyboard */
+.pos-item-row:focus {
+  background-color: var(--primary-light) !important;
+  outline: 2px solid var(--primary) !important;
+}
+.pos-item-row:hover {
+  background-color: var(--surface-2);
+}
 </style>
 </head>
 <body>
@@ -373,7 +384,7 @@ body.role-kasir [data-role-only]{display:none;}
     <div class="login-brand">
       <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 21V13h6v8"/></svg></div>
       <div class="txt">
-        <h1>iPOS Kasir</h1>
+        <h1>Solusi Kasir</h1>
         <p>Sistem Kasir Toko</p>
       </div>
     </div>
@@ -385,7 +396,7 @@ body.role-kasir [data-role-only]{display:none;}
       <div class="login-error" id="loginError"></div>
       <button type="submit" class="btn-login">Masuk</button>
     </form>
-    <p class="login-hint">Login pertama kali? Gunakan<br><b>admin</b> / <b>admin123</b> — segera ganti password di menu User.</p>
+    <p class="login-hint"><br><b></b><b></b></p>
   </div>
 </div>
 
@@ -462,7 +473,7 @@ body.role-kasir [data-role-only]{display:none;}
               <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
               <input type="text" id="posSearch" placeholder="Cari nama atau kode barang...">
             </div>
-            <div class="product-grid" id="posProductGrid"></div>
+            <div id="posProductGrid" style="max-height:calc(100vh - 260px);overflow-y:auto;"></div>
           </div>
 
           <div class="pos-cart">
@@ -741,5 +752,18 @@ body.role-kasir [data-role-only]{display:none;}
     </div>
   </div>
 </div>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+          console.log('Service Worker berhasil didaftarkan: ', reg.scope);
+        })
+        .catch((err) => {
+          console.log('Gagal mendaftarkan Service Worker: ', err);
+        });
+    });
+  }
+</script>
 </body>
 </html>
