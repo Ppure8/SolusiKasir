@@ -1231,7 +1231,7 @@ async function cekLisensiOnline() {
           <div style="background:#fff; padding:35px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.15); max-width:400px; width:100%;">
             <h2 style="color:#B23B3B; margin-bottom:12px;">Akses Ditangguhkan</h2>
             <p style="font-size:14px; color:#5B6355; line-height:1.5;">${data.pesan || 'Akses ke aplikasi ini dihentikan sementara. Silakan hubungi administrator.'}</p>
-            <div style="margin-top:20px; font-weight:bold; font-size:13px; color:#1F6E5C;">WhatsApp: 08xx-xxxx-xxxx</div>
+            <div style="margin-top:20px; font-weight:bold; font-size:13px; color:#1F6E5C;">WhatsApp: 0895-0448-3200</div>
           </div>
         </div>
       `;
