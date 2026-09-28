@@ -1163,6 +1163,9 @@ async function startApp() {
 }
 
 (async function init() {
+  const izinJalan = await cekLisensiOnline();
+  if (!izinJalan) return;
+
   await getDB();
   await seedIfEmpty();
   const restored = await tryRestoreSession();
@@ -1211,3 +1214,31 @@ document.addEventListener('keydown', function(e) {
     }
   }
 });
+
+/* ============================================================
+   SISTEM SAKLAR LISENSI JARAK JAUH
+   ============================================================ */
+async function cekLisensiOnline() {
+  const GIST_URL = 'https://raw.githubusercontent.com/ppure8/SolusiKasir/main/license.json';
+  
+  try {
+    const response = await fetch(GIST_URL + '?t=' + new Date().getTime());
+    const data = await response.json();
+    
+    if (data.status === 'blocked') {
+      document.body.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; background:#EFEDE2; color:#20261D; text-align:center; padding:20px;">
+          <div style="background:#fff; padding:35px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.15); max-width:400px; width:100%;">
+            <h2 style="color:#B23B3B; margin-bottom:12px;">Akses Ditangguhkan</h2>
+            <p style="font-size:14px; color:#5B6355; line-height:1.5;">${data.pesan || 'Akses ke aplikasi ini dihentikan sementara. Silakan hubungi administrator.'}</p>
+            <div style="margin-top:20px; font-weight:bold; font-size:13px; color:#1F6E5C;">WhatsApp: 08xx-xxxx-xxxx</div>
+          </div>
+        </div>
+      `;
+      return false;
+    }
+  } catch (err) {
+    console.warn("Gagal mengecek lisensi online, melanjutkan mode offline.");
+  }
+  return true;
+}
