@@ -1231,3 +1231,33 @@ body.role-kasir [data-role-only] {
     padding: 18px 14px 50px;
   }
 }
+/* Pengaturan khusus untuk menyembunyikan tombol saat mencetak struk */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #modalStrukMobile, #modalStrukMobile * {
+    visibility: visible;
+  }
+
+  #modalStrukMobile .no-print {
+    display: none !important;
+  }
+
+  #modalStrukMobile {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+  }
+
+  .modal-struk-box {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

@@ -148,7 +148,7 @@ async function dbGetAll(store) { const s = await tx(store); return wrap(s.getAll
 async function dbGetByIndex(store, idx, val) { const s = await tx(store); return wrap(s.index(idx).get(val)); }
 
 /* ============================================================
-   SEED DATA & LOGIN (Versi Anti-Gagal / Tanpa Enkripsi)
+   SEED DATA & LOGIN
    ============================================================ */
 async function seedIfEmpty() {
   try {
@@ -556,7 +556,6 @@ function renderProductGrid() {
     const out = p.stok <= 0;
     const low = p.stok > 0 && p.stok <= p.stokMin;
     
-    // Tambahkan class "pos-item-row" dan tabindex="0" (kecuali jika stok habis)
     return `<tr class="pos-item-row" ${out ? '' : 'tabindex="0"'} style="cursor: pointer; outline: none; ${out ? 'opacity: 0.5;' : ''}" ${out ? '' : `onclick="addToCart(${p.id})"`}>
       <td style="font-family:var(--font-mono); font-size:12px; color:var(--ink-soft);">${esc(p.kode)}</td>
       <td style="font-weight:600; font-size:13px;">${esc(p.nama)}</td>
@@ -681,6 +680,8 @@ if (btnBayarEl) {
     if (bayar < total) { toast('Uang diterima kurang dari total', 'error'); return; }
 
     const metodeEl = document.getElementById('metodeBayar');
+    const metodePilihan = metodeEl ? metodeEl.value : 'Tunai';
+
     const sale = {
       nomor: generateNomor('INV'),
       tanggal: new Date().toISOString(),
@@ -689,10 +690,15 @@ if (btnBayarEl) {
       subtotal: getCartSubtotal(),
       diskon: getDiskon(),
       total: total,
-      bayar: bayar,
-      kembalian: bayar - total,
-      metode: metodeEl ? metodeEl.value : 'Tunai',
+      bayar: metodePilihan === 'Tunai' ? bayar : total,
+      kembalian: metodePilihan === 'Tunai' ? bayar - total : 0,
+      metode: metodePilihan,
     };
+
+    if (metodePilihan === 'QRIS') {
+      prosesPembayaranQRIS(sale);
+      return;
+    }
 
     try {
       for (const item of cart) {
@@ -713,7 +719,7 @@ if (btnBayarEl) {
   });
 }
 
-/* ---- Cetak Struk ---- */
+/* ---- Cetak Struk (Modal Interaktif) ---- */
 async function printStruk(sale) {
   const s = await dbGet('settings', 1);
   const itemsHtml = sale.items.map(i => `
@@ -725,41 +731,50 @@ async function printStruk(sale) {
     </div>`).join('<div style="border-top:1px dashed #999;margin:4px 0;"></div>');
 
   const html = `
-  <html><head><title>Struk ${esc(sale.nomor)}</title>
-  <style>
-    @page { margin: 0mm; size: 58mm auto; }
-    body { font-family: 'Courier New', monospace; font-size: 11px; color: #111; width: 50mm; margin: 0 auto; padding: 12px 6px 6px 6px; }
-    h2 { font-size: 14px; margin: 0 0 2px; text-align: center; }
-    p { margin: 2px 0; text-align: center; }
-    .line { border-top: 1px dashed #444; margin: 6px 0; }
-    .row { display: flex; justify-content: space-between; margin: 2px 0; }
-    .bold { font-weight: bold; }
-    .foot { text-align: center; margin-top: 8px; font-style: italic; }
-  </style></head>
-  <body>
-    <h2>${esc(s ? s.namaToko : 'Toko Saya')}</h2>
-    <p>${esc(s ? s.alamat : '')}</p>
-    <p>${esc(s ? s.telepon : '')}</p>
-    <div class="line"></div>
-    <div class="row"><span>${esc(sale.nomor)}</span><span>${fmtTanggal(sale.tanggal)}</span></div>
-    <div class="row"><span>Kasir:</span><span>${esc(sale.kasir)}</span></div>
-    <div class="line"></div>
+  <div style="font-family: 'Courier New', monospace; font-size: 12px; color: #111; width: 100%; max-width: 300px; margin: 0 auto; padding: 10px; background: #fff;">
+    <h2 style="font-size: 15px; margin: 0 0 2px; text-align: center;">${esc(s ? s.namaToko : 'Toko Saya')}</h2>
+    <p style="margin: 2px 0; text-align: center;">${esc(s ? s.alamat : '')}</p>
+    <p style="margin: 2px 0; text-align: center;">${esc(s ? s.telepon : '')}</p>
+    <div style="border-top: 1px dashed #444; margin: 6px 0;"></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>${esc(sale.nomor)}</span><span>${fmtTanggal(sale.tanggal)}</span></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>Kasir:</span><span>${esc(sale.kasir)}</span></div>
+    <div style="border-top: 1px dashed #444; margin: 6px 0;"></div>
     ${itemsHtml}
-    <div class="line"></div>
-    <div class="row"><span>Subtotal</span><span>${formatRupiah(sale.subtotal)}</span></div>
-    <div class="row"><span>Diskon</span><span>${formatRupiah(sale.diskon)}</span></div>
-    <div class="row bold"><span>TOTAL</span><span>${formatRupiah(sale.total)}</span></div>
-    <div class="row"><span>Bayar (${esc(sale.metode)})</span><span>${formatRupiah(sale.bayar)}</span></div>
-    <div class="row"><span>Kembalian</span><span>${formatRupiah(sale.kembalian)}</span></div>
-    <div class="line"></div>
-    <p class="foot">${esc(s ? s.footer : 'Terima kasih')}</p>
-  </body></html>`;
+    <div style="border-top: 1px dashed #444; margin: 6px 0;"></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>Subtotal</span><span>${formatRupiah(sale.subtotal)}</span></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>Diskon</span><span>${formatRupiah(sale.diskon)}</span></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0; font-weight: bold;"><span>TOTAL</span><span>${formatRupiah(sale.total)}</span></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>Bayar (${esc(sale.metode)})</span><span>${formatRupiah(sale.bayar)}</span></div>
+    <div style="display: flex; justify-content: space-between; margin: 2px 0;"><span>Kembalian</span><span>${formatRupiah(sale.kembalian)}</span></div>
+    <div style="border-top: 1px dashed #444; margin: 6px 0;"></div>
+    <p style="text-align: center; margin-top: 8px; font-style: italic;">${esc(s ? s.footer : 'Terima kasih')}</p>
+  </div>`;
 
-  const w = window.open('', '_blank', 'width=360,height=640');
-  if (!w) { toast('Popup diblokir browser', 'error'); return; }
-  w.document.write(html);
-  w.document.close();
-  w.onload = () => { w.focus(); w.print(); };
+  let modalStruk = document.getElementById('modalStrukMobile');
+  if (!modalStruk) {
+    modalStruk = document.createElement('div');
+    modalStruk.id = 'modalStrukMobile';
+    modalStruk.className = 'modal-backdrop show';
+    modalStruk.innerHTML = `
+      <div class="modal modal-struk-box" style="max-width: 340px; text-align: center; padding: 20px;">
+        <h3 class="no-print" style="margin-bottom: 12px;">Transaksi Berhasil!</h3>
+        <div id="strukContentArea" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); background: #fff; padding: 10px; margin-bottom: 15px; text-align: left;"></div>
+        <div class="no-print" style="display: flex; gap: 10px;">
+          <button class="btn btn-outline" style="flex:1; justify-content:center;" onclick="document.getElementById('modalStrukMobile').remove()">Tutup</button>
+          <button class="btn btn-primary" style="flex:1; justify-content:center;" id="btnPrintStrukAction">Cetak Struk</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalStruk);
+  } else {
+    modalStruk.classList.add('show');
+  }
+
+  document.getElementById('strukContentArea').innerHTML = html;
+  
+  document.getElementById('btnPrintStrukAction').onclick = () => {
+    window.print();
+  };
 }
 
 /* ============================================================
@@ -1098,7 +1113,7 @@ if (btnSimpanUserEl) {
 }
 
 /* ============================================================
-   EVENT UMUM
+   EVENT UMUM & INIT
    ============================================================ */
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => goPage(btn.dataset.page));
@@ -1117,9 +1132,7 @@ document.querySelectorAll('.modal-backdrop').forEach(bd => {
 
 const btnLogoutEl = document.getElementById('btnLogout');
 if (btnLogoutEl) {
-  btnLogoutEl.addEventListener('click', () => {
-    doLogout();
-  });
+  btnLogoutEl.addEventListener('click', () => { doLogout(); });
 }
 
 const hamburgerEl = document.getElementById('hamburger');
@@ -1147,9 +1160,6 @@ if (loginFormEl) {
   });
 }
 
-/* ============================================================
-   INIT
-   ============================================================ */
 async function startApp() {
   const loginScreen = document.getElementById('loginScreen');
   const appShell = document.getElementById('appShell');
@@ -1181,19 +1191,17 @@ document.addEventListener('keydown', function(e) {
 
   const activeEl = document.activeElement;
 
-  // 1. Jika di kolom pencarian lalu menekan TAB atau Panah Bawah
   if ((e.key === 'Tab' || e.key === 'ArrowDown') && activeEl.id === 'posSearch') {
-    e.preventDefault(); // Mencegah fungsi tab bawaan browser
+    e.preventDefault();
     const firstRow = document.querySelector('.pos-item-row[tabindex="0"]');
     if (firstRow) firstRow.focus();
   }
 
-  // 2. Jika sedang fokus memilih baris barang
   if (activeEl.classList.contains('pos-item-row')) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       let next = activeEl.nextElementSibling;
-      while (next && !next.hasAttribute('tabindex')) { next = next.nextElementSibling; } // Lewati barang habis
+      while (next && !next.hasAttribute('tabindex')) { next = next.nextElementSibling; }
       if (next) next.focus();
     } 
     else if (e.key === 'ArrowUp') {
@@ -1203,14 +1211,13 @@ document.addEventListener('keydown', function(e) {
       if (prev) {
         prev.focus();
       } else {
-        // Jika sudah di paling atas, kembalikan kursor ke kolom pencarian
         const searchInput = document.getElementById('posSearch');
         if (searchInput) searchInput.focus();
       }
     } 
     else if (e.key === 'Enter') {
       e.preventDefault();
-      activeEl.click(); // Otomatis memasukkan barang ke keranjang
+      activeEl.click();
     }
   }
 });
@@ -1241,4 +1248,88 @@ async function cekLisensiOnline() {
     console.warn("Gagal mengecek lisensi online, melanjutkan mode offline.");
   }
   return true;
+}
+
+/* ============================================================
+   INTEGRASI QRIS DOKU
+   ============================================================ */
+let qrisCheckInterval = null;
+
+async function prosesPembayaranQRIS(saleData) {
+  openModal('modalQRIS');
+  document.getElementById('qrisTotalNominal').textContent = formatRupiah(saleData.total);
+  document.getElementById('qrisStatusText').textContent = 'Menghubungkan ke DOKU...';
+  
+  try {
+    const response = await fetch('https://api.doku.com/checkout/v1/payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order: { amount: saleData.total, invoice_number: saleData.nomor, currency: "IDR" },
+        payment: { payment_method_type: ["QRIS"] }
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result && result.qris_url_image) {
+      document.getElementById('qrisImageContainer').innerHTML = `<img src="${result.qris_url_image}" alt="QRIS DOKU" style="width: 200px; height: 200px; display: block;">`;
+      document.getElementById('qrisStatusText').textContent = 'Silakan scan QRIS...';
+      mulaiCekStatusDOKU(result.transaction_id, saleData);
+    } else {
+      document.getElementById('qrisStatusText').textContent = 'Gagal memuat QRIS.';
+      toast('Gagal membuat QRIS DOKU', 'error');
+    }
+  } catch (err) {
+    console.error("Error DOKU:", err);
+    document.getElementById('qrisStatusText').textContent = 'Koneksi DOKU gagal. Periksa jaringan.';
+    toast('Kesalahan koneksi pembayaran', 'error');
+  }
+}
+
+function mulaiCekStatusDOKU(trxId, saleData) {
+  if (qrisCheckInterval) clearInterval(qrisCheckInterval);
+  qrisCheckInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`https://api.doku.com/orders/v1/status/${trxId}`);
+      const statusData = await res.json();
+      if (statusData && statusData.status === 'SUCCESS') {
+        clearInterval(qrisCheckInterval);
+        document.getElementById('qrisStatusText').textContent = 'Pembayaran Sukses! Mencetak struk...';
+        selesaikanTransaksiBerhasil(saleData);
+        setTimeout(() => { closeModal('modalQRIS'); }, 1500);
+      }
+    } catch (e) {
+      console.log("Mengecek status pembayaran...");
+    }
+  }, 3000);
+}
+
+function batalQRIS() {
+  if (qrisCheckInterval) clearInterval(qrisCheckInterval);
+  closeModal('modalQRIS');
+  toast('Pembayaran QRIS dibatalkan', 'error');
+}
+
+async function selesaikanTransaksiBerhasil(sale) {
+  try {
+    for (const item of cart) {
+      const p = await dbGet('products', item.productId);
+      if (p) { p.stok = Math.max(0, p.stok - item.qty); await dbPut('products', p); }
+    }
+    const newId = await dbAdd('sales', sale);
+    sale.id = newId;
+    toast('Transaksi QRIS Berhasil!', 'success');
+    printStruk(sale);
+    cart = [];
+    const inputDiskonEl = document.getElementById('inputDiskon');
+    const inputBayarEl = document.getElementById('inputBayar');
+    if (inputDiskonEl) inputDiskonEl.value = 0;
+    if (inputBayarEl) inputBayarEl.value = '';
+    allProductsCache = await dbGetAll('products');
+    renderProductGrid();
+    renderCart();
+  } catch (err) { 
+    toast('Gagal menyimpan transaksi: ' + err.message, 'error'); 
+  }
 }
